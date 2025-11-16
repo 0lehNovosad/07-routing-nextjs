@@ -1,78 +1,76 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import css from "./TagsMenu.module.css";
+import Link from "next/link";
+import { NoteTag } from "@/types/note";
 
-// Додаємо відсутні теги Meeting та Shopping (та залишаємо решту)
-const TAGS = [
-  "All",
-  "Work",
-  "Personal",
-  "Todo",
-  "Meeting",
-  "Shopping",
-] as const;
+const TagsMenu = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLUListElement>(null);
 
-export default function TagsMenu() {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
 
-  // NEW: замыкаем в функцию — будем вызывать при выборе опции
-  const handleSelect = () => setOpen(false); // ← закрыть сразу после выбора
+  const noteTags = Object.values(NoteTag);
 
   useEffect(() => {
-    if (!open) return;
-
-    const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
     };
 
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [open]);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
-    <div className={css.menuContainer} ref={rootRef}>
-      <button
-        type="button"
-        className={css.menuButton}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
+    <div className={css.menuContainer}>
+      <button onClick={toggle} className={css.menuButton}>
         Notes ▾
       </button>
-
-      {open && (
-        <ul className={css.menuList} role="menu" aria-label="Filter by tag">
-          {TAGS.map((tag) => {
-            const href =
-              tag === "All" ? "/notes/filter/All" : `/notes/filter/${tag}`;
-            return (
-              <li key={tag} className={css.menuItem} role="none">
-                <a
-                  className={css.menuLink}
-                  role="menuitem"
-                  href={href}
-                  // NEW: мгновенно закрываем дропдаун при выборе
-                  onPointerDown={handleSelect} // для мыши/тача — закрывает до навигации
-                  onClick={handleSelect} // для клавиатуры (Enter/Space)
-                >
-                  {tag}
-                </a>
-              </li>
-            );
-          })}
+      {isOpen && (
+        <ul ref={menuRef} className={css.menuList}>
+          <li className={css.menuItem}>
+            <Link
+              className={css.menuLink}
+              href={`/notes/filter/All`}
+              onClick={toggle}
+            >
+              All notes
+            </Link>
+          </li>
+          {noteTags.map((tag) => (
+            <li key={tag} className={css.menuItem}>
+              <Link
+                className={css.menuLink}
+                href={`/notes/filter/${tag}`}
+                onClick={toggle}
+              >
+                {tag}
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
     </div>
   );
-}
+};
+
+export default TagsMenu;

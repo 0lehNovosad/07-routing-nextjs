@@ -1,9 +1,9 @@
 "use client";
 
-import ErrorMessage from "@/components/ErrorMessage/ErrorMessage";
+interface ErrorProps {
+  error: Error;
+}
 
-export default function NoteDetailsError({ error }: { error: Error }) {
-  return (
-    <ErrorMessage message={`Could not fetch note details. ${error.message}`} />
-  );
+export default function Error({ error }: ErrorProps) {
+  return <p>Could not fetch the list of notes. {error.message}</p>;
 }

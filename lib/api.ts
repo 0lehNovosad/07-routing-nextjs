@@ -1,61 +1,55 @@
-import api from "./api/axios";
-import type { Note } from "@/types/note";
+import axios from "axios";
+import type { AxiosResponse } from "axios";
+import type { Note } from "../types/note";
 
-export interface PaginatedNotesResponse {
+const api = axios.create({
+  baseURL: "https://notehub-public.goit.study/api",
+  headers: {
+    Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
+    "Content-Type": "application/json",
+  },
+});
+
+export interface FetchNotesResponse {
   notes: Note[];
   totalPages: number;
 }
 
-export interface NotesQueryParams {
-  q?: string;
+export async function fetchNotes(params: {
   page?: number;
-  tag?: string; // если выбран "All" — не передаём вовсе
-}
+  perPage?: number;
+  search?: string;
+  tag?: string;
+}): Promise<FetchNotesResponse> {
+  const { page = 1, perPage = 12, search = "", tag } = params;
 
-export type CreateNotePayload = Pick<Note, "title" | "content" | "tag">;
-export type UpdateNotePayload = Partial<
-  Pick<Note, "title" | "content" | "tag">
->;
-
-/** Список заметок (с пагинацией и фильтром по тегу) */
-export async function fetchNotes(
-  params: NotesQueryParams = {},
-): Promise<PaginatedNotesResponse> {
-  const { q, page, tag } = params;
-  const qs: Record<string, string | number | undefined> = {
-    q,
-    page,
-    ...(tag ? { tag } : {}),
-  };
-  const { data } = await api.get<PaginatedNotesResponse>("/notes", {
-    params: qs,
+  const response: AxiosResponse<FetchNotesResponse> = await api.get("/notes", {
+    params: {
+      page,
+      perPage,
+      search: typeof search === "string" ? search : "",
+      tag,
+    },
   });
-  return data;
+
+  return response.data;
 }
 
-/** Детали заметки */
 export async function fetchNoteById(id: string): Promise<Note> {
-  const { data } = await api.get<Note>(`/notes/${id}`);
-  return data;
+  const response = await api.get<Note>(`/notes/${id}`);
+  return response.data;
 }
 
-/** Создание заметки */
-export async function createNote(payload: CreateNotePayload): Promise<Note> {
-  const { data } = await api.post<Note>("/notes", payload);
-  return data;
+export async function createNote(payload: {
+  title: string;
+  content?: string;
+  tag: string;
+}): Promise<Note> {
+  const response: AxiosResponse<Note> = await api.post("/notes", payload);
+  return response.data;
 }
 
-/** Обновление заметки (PATCH, не PUT) */
-export async function updateNote(
-  id: string,
-  patch: UpdateNotePayload,
-): Promise<Note> {
-  const { data } = await api.patch<Note>(`/notes/${id}`, patch);
-  return data;
-}
-
-/** Удаление заметки — возвращаем удалённый объект */
 export async function deleteNote(id: string): Promise<Note> {
-  const { data } = await api.delete<Note>(`/notes/${id}`);
-  return data;
+  const response: AxiosResponse<Note> = await api.delete(`/notes/${id}`);
+  return response.data;
 }
