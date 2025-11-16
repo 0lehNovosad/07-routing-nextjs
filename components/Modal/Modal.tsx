@@ -1,47 +1,63 @@
 "use client";
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
+
+import { ReactNode, useEffect } from "react";
 import css from "./Modal.module.css";
 
-interface ModalProps {
+export default function Modal({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
   onClose: () => void;
-  children: React.ReactNode;
-}
-
-export default function Modal({ onClose, children }: ModalProps) {
+  children: ReactNode;
+}) {
   useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    // блокувати прокрутку
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", onKey);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("keydown", onKey);
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      // відновити попереднє значення overflow
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [onClose]);
+  }, [open, onClose]);
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  if (!open) return null;
 
-  return createPortal(
+  const stop = (e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation();
+
+  return (
     <div
       className={css.backdrop}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
-      onClick={handleBackdropClick}
     >
-      <div className={css.modal}>{children}</div>
-    </div>,
-    document.body
+      <div className={css.modal} onClick={stop}>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 12,
+            background: "transparent",
+            border: "none",
+            fontSize: 20,
+            color: "#6c757d",
+            cursor: "pointer",
+            lineHeight: 1,
+          }}
+        >
+          ×
+        </button>
+        {children}
+      </div>
+    </div>
   );
 }

@@ -1,91 +1,112 @@
 "use client";
 
-import NoteList from "@/components/NoteList/NoteList";
-import css from "./NotesPage.module.css";
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api";
-import type { FetchNotesResponse } from "@/lib/api";
+import { useEffect, useState } from "react";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  fetchNotes,
+  createNote,
+  type PaginatedNotesResponse,
+  type CreateNotePayload,
+} from "@/lib/api";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
+import NoteList from "@/components/NoteList/NoteList";
 import Modal from "@/components/Modal/Modal";
 import NoteForm from "@/components/NoteForm/NoteForm";
-import { useDebounce } from "use-debounce";
-import { NoteTag } from "@/types/note";
+import css from "./NotesPage.module.css";
 
-interface Props {
-  search: string;
-  page: number;
-  tag?: NoteTag | undefined;
-}
+export default function NotesClient({ tag }: { tag: string | null }) {
+  const qc = useQueryClient();
 
-export default function NotesClient({ search, page, tag }: Props) {
-  const [isOpenModal, setIsOpenModal] = useState(false);
-  const [query, setQuery] = useState(search);
-  const [debouncedQuery] = useDebounce(query, 500);
-  const [currentPage, setCurrentPage] = useState(page);
+  const [search, setSearch] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [isCreateOpen, setCreateOpen] = useState(false);
 
-  const { data, isLoading, error } = useQuery<FetchNotesResponse>({
-    queryKey: ["notes", debouncedQuery, currentPage, tag],
-    queryFn: () =>
-      fetchNotes({
-        search: debouncedQuery,
-        page: currentPage,
-        perPage: 12,
-        tag: tag,
-      }),
-    enabled: true,
-    placeholderData: (prev) => prev,
+  
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQ(search.trim());
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { data, isLoading, error, isFetching } =
+    useQuery<PaginatedNotesResponse>({
+      queryKey: ["notes", { q: debouncedQ, page, tag: tag ?? "" }],
+      queryFn: () => fetchNotes({ q: debouncedQ, page, tag: tag ?? undefined }),
+      placeholderData: keepPreviousData,
+      refetchOnWindowFocus: false,
+    });
+
+  
+  const create = useMutation({
+    mutationFn: (payload: CreateNotePayload) => createNote(payload),
+    onSuccess: () => {
+      setCreateOpen(false);
+      qc.invalidateQueries({ queryKey: ["notes"] });
+    },
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedQuery]);
+  if (isLoading) return <p>Loading, please wait...</p>;
+  if (error)
+    return <p>Could not fetch the list of notes. {(error as Error).message}</p>;
 
-  const handleSearch = (value: string) => {
-    setQuery(value);
-    setCurrentPage(1);
-    console.log("searching for", value);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  const notes = data?.notes ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   return (
-    <>
-      <div className={css.app}>
-        <header className={css.toolbar}>
-          {/* Компонент SearchBox */}
-          {<SearchBox handleSearch={handleSearch} />}
-          {/* Пагінація */}
-          {/* условие что рендер будет в случае если в коллекции будет 1+ компонент */}
-          {data && data.totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={data.totalPages}
-              onPageChange={handlePageChange}
-            />
-          )}
-
-          {/* Кнопка створення нотатки */}
-          <button className={css.button} onClick={() => setIsOpenModal(true)}>
-            Create note +
-          </button>
-        </header>
-        {isLoading && <p>Loading...</p>}
-        {error && <p>Error loading notes</p>}
-        {data && data.notes.length > 0 ? (
-          <NoteList notes={data.notes} />
-        ) : (
-          <p>No notes found</p>
-        )}
+    <div className={css.app}>
+      <div className={css.toolbar}>
+        <div style={{ flex: "1 1 520px", maxWidth: 520 }}>
+          <SearchBox onSearch={(query) => setSearch(query)} />
+        </div>
+        <button
+          type="button"
+          className={css.button}
+          onClick={() => setCreateOpen(true)}
+        >
+          Create note
+        </button>
       </div>
-      {isOpenModal && (
-        <Modal onClose={() => setIsOpenModal(false)}>
-          <NoteForm onCancel={() => setIsOpenModal(false)} />
-        </Modal>
+
+      {notes.length === 0 ? (
+        <p>No notes found.</p>
+      ) : (
+        <>
+          
+          <NoteList notes={notes} />
+          {totalPages > 1 && (
+  <div className={css.paginationWrap}>
+    <Pagination
+      totalPages={totalPages}
+      currentPage={page}
+      onPageChange={(p) => setPage(p)}
+    />
+  </div>
+)}
+        </>
       )}
-    </>
+
+      
+      <Modal open={isCreateOpen} onClose={() => setCreateOpen(false)}>
+        <NoteForm
+          onSuccess={(payload) => create.mutate(payload)}
+          onCancel={() => setCreateOpen(false)}
+          isSubmitting={create.isPending}
+          errorMsg={
+            create.isError
+              ? ((create.error as Error)?.message ?? "Failed to create note")
+              : undefined
+          }
+        />
+      </Modal>
+    </div>
   );
 }

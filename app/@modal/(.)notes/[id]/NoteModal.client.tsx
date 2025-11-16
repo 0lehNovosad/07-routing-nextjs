@@ -7,19 +7,20 @@ import type { Note } from "@/types/note";
 import Modal from "@/components/Modal/Modal";
 import NotePreview from "@/components/NotePreview/NotePreview";
 
-export default function NotePreviewClient({ id }: { id: string }) {
+export default function NoteModalClient({ id }: { id: string }) {
   const router = useRouter();
 
   const { data, isLoading, isError, error } = useQuery<Note>({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
-    refetchOnMount: false, 
+    refetchOnMount: false,
+    retry: false,
   });
 
   return (
     <Modal open onClose={() => router.back()}>
       {isLoading ? (
-        <p style={{ padding: 16 }}>Loading, please wait...</p>
+        <p style={{ padding: 16, fontSize: 22 }}>Loading...</p>
       ) : isError ? (
         <div style={{ padding: 16 }}>
           <button
@@ -29,6 +30,7 @@ export default function NotePreviewClient({ id }: { id: string }) {
               border: "none",
               textDecoration: "underline",
               cursor: "pointer",
+              padding: 0,
               marginBottom: 8,
             }}
             aria-label="Close"
