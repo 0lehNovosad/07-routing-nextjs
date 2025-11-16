@@ -1,65 +1,61 @@
-import axios from "axios";
-import { NoteTags, Note } from "@/types/note";
+import api from "./api/axios";
+import type { Note } from "@/types/note";
 
-axios.defaults.baseURL = "https://notehub-public.goit.study/api/notes";
-const API_TOKEN = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN;
-
-const instance = axios.create({
-  headers: {
-    Authorization: `Bearer ${API_TOKEN}`,
-  },
-});
-
-export interface FetchNotesParams {
-  page: number;
-  perPage?: number;
-  search?: string;
-  tag?: string;
-}
-
-export interface FetchNotesResponse {
+export interface PaginatedNotesResponse {
   notes: Note[];
   totalPages: number;
 }
 
-export const fetchNotes = async (
-  params: FetchNotesParams
-): Promise<FetchNotesResponse> => {
-  const { page, search, tag } = params;
+export interface NotesQueryParams {
+  q?: string;
+  page?: number;
+  tag?: string; // если выбран "All" — не передаём вовсе
+}
 
-  const queryParams: Record<string, string | number> = {
+export type CreateNotePayload = Pick<Note, "title" | "content" | "tag">;
+export type UpdateNotePayload = Partial<
+  Pick<Note, "title" | "content" | "tag">
+>;
+
+/** Список заметок (с пагинацией и фильтром по тегу) */
+export async function fetchNotes(
+  params: NotesQueryParams = {},
+): Promise<PaginatedNotesResponse> {
+  const { q, page, tag } = params;
+  const qs: Record<string, string | number | undefined> = {
+    q,
     page,
+    ...(tag ? { tag } : {}),
   };
-
-  if (search?.trim()) {
-    queryParams.search = search;
-  }
-
-  if (tag && tag !== "All") {
-    queryParams.tag = tag;
-  }
-
-  const response = await instance.get<FetchNotesResponse>("", {
-    params: queryParams,
+  const { data } = await api.get<PaginatedNotesResponse>("/notes", {
+    params: qs,
   });
-  return response.data;
-};
+  return data;
+}
 
-export const createNote = async (data: {
-  title: string;
-  content: string;
-  tag: NoteTags;
-}): Promise<Note> => {
-  const response = await instance.post<Note>("", data);
-  return response.data;
-};
+/** Детали заметки */
+export async function fetchNoteById(id: string): Promise<Note> {
+  const { data } = await api.get<Note>(`/notes/${id}`);
+  return data;
+}
 
-export const deleteNote = async (id: string): Promise<Note> => {
-  const response = await instance.delete<Note>(`/${id}`);
-  return response.data;
-};
+/** Создание заметки */
+export async function createNote(payload: CreateNotePayload): Promise<Note> {
+  const { data } = await api.post<Note>("/notes", payload);
+  return data;
+}
 
-export const fetchNoteById = async (id: string): Promise<Note> => {
-  const response = await instance.get<Note>(`/${id}`);
-  return response.data;
-};
+/** Обновление заметки (PATCH, не PUT) */
+export async function updateNote(
+  id: string,
+  patch: UpdateNotePayload,
+): Promise<Note> {
+  const { data } = await api.patch<Note>(`/notes/${id}`, patch);
+  return data;
+}
+
+/** Удаление заметки — возвращаем удалённый объект */
+export async function deleteNote(id: string): Promise<Note> {
+  const { data } = await api.delete<Note>(`/notes/${id}`);
+  return data;
+}

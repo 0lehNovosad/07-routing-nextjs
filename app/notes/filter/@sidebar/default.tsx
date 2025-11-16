@@ -1,35 +1,23 @@
-import { NoteTags } from "@/types/note";
 import css from "./SidebarNotes.module.css";
-import Link from "next/link";
 
-const categories: NoteTags[] = [
-  "Todo",
-  "Work",
-  "Personal",
-  "Meeting",
-  "Shopping",
-];
+const TAGS = ["All", "Work", "Personal", "Todo", "Meeting", "Shopping"];
 
-const SidebarNotes = () => {
+export default function SidebarNotesDefault() {
   return (
-    <aside>
+    <nav aria-label="Notes filters">
       <ul className={css.menuList}>
-        <li className={css.menuItem}>
-          <Link href="/notes/filter/All" className={css.menuLink}>
-            All notes
-          </Link>
-        </li>
-
-        {categories.map((tag) => (
-          <li key={tag} className={css.menuItem}>
-            <Link href={`/notes/filter/${tag}`} className={css.menuLink}>
-              {tag}
-            </Link>
-          </li>
-        ))}
+        {TAGS.map((tag) => {
+          const href =
+            tag === "All" ? "/notes/filter/All" : `/notes/filter/${tag}`;
+          return (
+            <li key={tag} className={css.menuItem}>
+              <a href={href} className={css.menuLink}>
+                {tag}
+              </a>
+            </li>
+          );
+        })}
       </ul>
-    </aside>
+    </nav>
   );
-};
-
-export default SidebarNotes;
+}

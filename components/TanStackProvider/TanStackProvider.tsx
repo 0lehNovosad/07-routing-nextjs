@@ -3,7 +3,26 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
 
-export const TanStackProvider = ({ children }: { children: ReactNode }) => {
-  const [client] = useState(() => new QueryClient());
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-};
+export default function TanStackProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // стабильный QueryClient на клиентах
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // типичные настройки для нашего проекта
+            refetchOnWindowFocus: false,
+            retry: 1,
+          },
+        },
+      }),
+  );
+
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}

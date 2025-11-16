@@ -1,49 +1,49 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import css from "./NotePreview.module.css";
-import Modal from "@/components/Modal/Modal";
 import { useQuery } from "@tanstack/react-query";
 import { fetchNoteById } from "@/lib/api";
+import type { Note } from "@/types/note";
+import Modal from "@/components/Modal/Modal";
+import NotePreview from "@/components/NotePreview/NotePreview";
 
-interface NoteModalPreviewProps {
-  id: string;
-}
-
-export default function NoteModalPreviewClient({ id }: NoteModalPreviewProps) {
+export default function NotePreviewClient({ id }: { id: string }) {
   const router = useRouter();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isError, error } = useQuery<Note>({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
     refetchOnMount: false,
+    retry: false,
   });
 
-  const handleClose = () => router.back();
-
-  if (isLoading)
-    return (
-      <Modal onClose={handleClose}>
-        <p>Loading...</p>
-      </Modal>
-    );
-
-  if (error)
-    return (
-      <Modal onClose={handleClose}>
-        <p>Failed to load note details.</p>
-      </Modal>
-    );
-
   return (
-    <Modal onClose={handleClose}>
-      <button onClick={handleClose} className={css.button}>
-        ✕
-      </button>
-      <h2>{data?.title}</h2>
-      <p>{data?.content}</p>
-      <p>{data?.tag}</p>
-      <p>{data?.createdAt}</p>
+    <Modal open onClose={() => router.back()}>
+      {isLoading ? (
+        <p style={{ padding: 16 }}>Loading, please wait...</p>
+      ) : isError ? (
+        <div style={{ padding: 16 }}>
+          <button
+            onClick={() => router.back()}
+            style={{
+              background: "transparent",
+              border: "none",
+              textDecoration: "underline",
+              cursor: "pointer",
+              padding: 0,
+              marginBottom: 8,
+            }}
+            aria-label="Close"
+          >
+            ← Back
+          </button>
+          <p style={{ color: "#b91c1c" }}>
+            {(error as Error)?.message ?? "Failed to load note"}
+          </p>
+        </div>
+      ) : (
+        <NotePreview note={data ?? null} onBack={() => router.back()} />
+      )}
     </Modal>
   );
 }

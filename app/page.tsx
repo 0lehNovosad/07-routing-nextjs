@@ -1,8 +1,9 @@
-import css from "./Home.module.css";
+// app/page.tsx
+import css from "./page.module.css";
 
-const App = () => {
+export default function HomePage() {
   return (
-    <main>
+    <main className={css.main}>
       <div className={css.container}>
         <h1 className={css.title}>Welcome to NoteHub</h1>
         <p className={css.description}>
@@ -19,6 +20,4 @@ const App = () => {
       </div>
     </main>
   );
-};
-
-export default App;
+}

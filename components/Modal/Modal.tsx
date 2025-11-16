@@ -1,36 +1,63 @@
 "use client";
 
-import ReactDOM from "react-dom";
-import css from "./NoteModal.module.css";
-import { useEffect } from "react";
+import { ReactNode, useEffect } from "react";
+import css from "./Modal.module.css";
 
-interface ModalProps {
-  children: React.ReactNode;
+export default function Modal({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
   onClose: () => void;
-}
-
-export default function Modal({ children, onClose }: ModalProps) {
+  children: ReactNode;
+}) {
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", onKey);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("keydown", onKey);
+      }
+    };
+  }, [open, onClose]);
 
-  const handleBackdropClose = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose();
-  };
+  if (!open) return null;
 
-  return ReactDOM.createPortal(
+  const stop = (e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation();
+
+  return (
     <div
       className={css.backdrop}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
-      onClick={handleBackdropClose}
     >
-      <div className={css.modal}>{children}</div>
-    </div>,
-    document.body
+      <div className={css.modal} onClick={stop}>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 12,
+            background: "transparent",
+            border: "none",
+            fontSize: 20,
+            color: "#6c757d",
+            cursor: "pointer",
+            lineHeight: 1,
+          }}
+        >
+          ×
+        </button>
+        {children}
+      </div>
+    </div>
   );
 }
