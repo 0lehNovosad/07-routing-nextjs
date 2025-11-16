@@ -1,48 +1,26 @@
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from "@tanstack/react-query";
-import { notFound } from "next/navigation";
+import TagsMenu from "@/components/TagsMenu/TagsMenu";
+import Notes from "./Notes.client";
 import { fetchNotes } from "@/lib/api";
-import NotesClient from "./Notes.client";
 
+interface NotesPageProps {
+  params: Promise<{ slug?: string[] }>;
+}
 
-const VALID_TAGS = ["all", "work", "personal", "todo", "meeting", "shopping"];
-
-export default async function FilterPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string[] }>;
-  searchParams: Promise<{ q?: string; page?: string }>;
-}) {
+const NotesPage = async ({ params }: NotesPageProps) => {
   const { slug } = await params;
-  const sp = await searchParams;
 
-  
-  const tagRaw = slug?.[0]?.toLowerCase() ?? "all";
+  const tag = slug?.[0] ?? "";
 
- 
-  if (!VALID_TAGS.includes(tagRaw)) {
-    notFound();
-  }
+  const fetchOptions = { page: 1, ...(tag && tag !== "All" ? { tag } : {}) };
 
-  
-  const tag = tagRaw === "all" ? undefined : tagRaw;
-  const q = typeof sp?.q === "string" ? sp.q : "";
-  const page = sp?.page ? Number(sp.page) : 1;
-
-  const qc = new QueryClient();
-
-  await qc.prefetchQuery({
-    queryKey: ["notes", { q, page, tag: tag ?? "" }],
-    queryFn: () => fetchNotes({ q, page, tag }),
-  });
+  const { notes, totalPages } = await fetchNotes(fetchOptions);
 
   return (
-    <HydrationBoundary state={dehydrate(qc)}>
-      <NotesClient tag={tag ?? null} />
-    </HydrationBoundary>
+    <div>
+      <TagsMenu/>
+      <Notes notes={notes} totalPages={totalPages} tag={ tag } />
+    </div>
   );
-}
+};
+
+export default NotesPage;

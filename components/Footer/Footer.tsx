@@ -1,8 +1,6 @@
-'use client';
+import css from "./Footer.module.css";
 
-import css from './Footer.module.css';
-
-export function Footer() {
+const Footer = () => {
   return (
     <footer className={css.footer}>
       <div className={css.content}>
@@ -10,11 +8,13 @@ export function Footer() {
         <div className={css.wrap}>
           <p>Developer: Oleh Novosad</p>
           <p>
-            Contact us:{' '}
-            <a href="mailto:student@notehub.app">mailto:student@notehub.app</a>
+            Contact us:
+            <a href="mailto:student@notehub.app">student@notehub.app</a>
           </p>
         </div>
       </div>
     </footer>
   );
-}
+};
+
+export default Footer;

@@ -1,40 +1,24 @@
-import type { ReactNode } from "react";
+import "./globals.css";
 import { TanStackProvider } from "@/components/TanStackProvider/TanStackProvider";
 import Header from "@/components/Header/Header";
-import { Footer } from "@/components/Footer/Footer";
-import "./globals.css";
-
-export const metadata = {
-  title: "NoteHub",
-  description: "Manage your personal notes efficiently",
-};
+import Footer from "@/components/Footer/Footer";
+import React from "react";
 
 export default function RootLayout({
   children,
   modal,
 }: {
-  children: ReactNode;
-  modal: ReactNode;
+  children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   return (
     <html lang="en">
       <body>
         <TanStackProvider>
-          <div
-            style={{
-              minHeight: "100vh",
-              display: "flex",
-              flexDirection: "column",
-              backgroundColor: "#f8f9fa",
-            }}
-          >
-            <Header />
-            <main style={{ flex: 1, position: "relative" }}>
-              {children}
-              {modal}
-            </main>
-            <Footer />
-          </div>
+          <Header />
+          {children}
+          {modal}
+          <Footer />
         </TanStackProvider>
       </body>
     </html>

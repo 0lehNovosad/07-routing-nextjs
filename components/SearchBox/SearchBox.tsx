@@ -1,31 +1,20 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import css from './SearchBox.module.css';
+import css from "./SearchBox.module.css";
 
 interface SearchBoxProps {
-  onSearch: (query: string) => void;
+  value: string;
+  onChange: (value: string) => void;
 }
 
-export default function SearchBox({ onSearch }: SearchBoxProps) {
-  const [value, setValue] = useState('');
-
-  useEffect(() => {
-    const delay = setTimeout(() => {
-      onSearch(value.trim());
-    }, 500);
-    return () => clearTimeout(delay);
-  }, [value, onSearch]);
-
+export default function SearchBox({ value, onChange }: SearchBoxProps) {
   return (
-    <div>
+    <>
       <input
-        type="text"
         className={css.input}
-        placeholder="Search notes..."
+        type="text"
+        placeholder="Search notes"
         value={value}
-        onChange={e => setValue(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
       />
-    </div>
+    </>
   );
 }
